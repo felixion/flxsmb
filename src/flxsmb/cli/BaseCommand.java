@@ -1,5 +1,8 @@
 package flxsmb.cli;
 
+import jcifs.smb.NtlmPasswordAuthentication;
+import jcifs.smb.SID;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -108,5 +111,35 @@ public abstract class BaseCommand
             return (size / (1024)) + "Kb";
 
         return Integer.toString(size);
+    }
+
+    public String toString()
+    {
+        String hostname = this.hostname != null ? this.hostname : "";
+        String sharename = this.sharename != null ? this.sharename : "";
+        String domain = this.domain != null ? this.domain : "";
+        String username = this.username != null ? this.username : "";
+        String password = this.password != null ? this.password : "";
+
+        return String.format("#<%s :hostname %s :share %s :dirpath %s :domain %s :username %s :password %s",
+                this.getClass().getName(), hostname, sharename, dirpath, domain, username, password.replaceAll(".", "*"));
+    }
+
+    protected String formatUser(SID sid) throws IOException
+    {
+        sid = resolveSID(sid);
+
+        if (sid.getAccountName() != null)
+            return sid.getAccountName();
+
+        return sid.toDisplayString();
+    }
+
+    protected SID resolveSID(SID sid) throws IOException
+    {
+        if (sid.getAccountName() == null)
+            sid.resolve(hostname, new NtlmPasswordAuthentication(domain, username, password));
+
+        return sid;
     }
 }

@@ -1,6 +1,7 @@
 package flxsmb.cli;
 
 import jcifs.smb.NtlmPasswordAuthentication;
+import jcifs.smb.SID;
 import jcifs.smb.SmbException;
 import jcifs.smb.SmbFile;
 
@@ -33,7 +34,6 @@ public class ListDirectoryCommand extends BaseCommand
 
         try
         {
-
             command.scanCommandLineArgs(args);
             command.promptForPassword();
             command.validateArguments();
@@ -42,6 +42,7 @@ public class ListDirectoryCommand extends BaseCommand
         catch (Exception e)
         {
             System.out.println(String.format("Encountered error listing directory [%s:%s:%s]\n\t - %s", command.hostname, command.sharename, command.dirpath, e.getMessage()));
+            e.printStackTrace();
         }
     }
 
@@ -87,37 +88,30 @@ public class ListDirectoryCommand extends BaseCommand
         }
     }
 
-    protected void printFileEntry(SmbFile file)
+    protected void printFileEntry(SmbFile file) throws IOException, SmbException
     {
-        try
-        {
-            String owner = "owner";
-            String group = "group";
+        String owner = formatUser(file.getOwnerUser());
+        String group = formatUser(file.getOwnerGroup());
 
-            owner = String.format("%" + ownerColumnWidth + "s", owner);
-            group = String.format("%" + groupColumnWidth + "s", group);
+        owner = String.format("%" + ownerColumnWidth + "s", owner);
+        group = String.format("%" + groupColumnWidth + "s", group);
 
-            int size = file.getContentLength();
+        int size = file.getContentLength();
 
-            Date mtime = new Date(file.lastModified());
-            Date ctime = new Date(file.createTime());
+        Date mtime = new Date(file.lastModified());
+        Date ctime = new Date(file.createTime());
 
-            String name = file.getName();
+        String name = file.getName();
 
-            System.out.println(String.format("%s %s   %6s   %s   %s   %s", owner, group, formatSize(size), formatDate(mtime), formatDate(ctime), name));
-        }
-        catch (SmbException e)
-        {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        }
+        System.out.println(String.format("%s %s   %6s   %s   %s   %s", owner, group, formatSize(size), formatDate(mtime), formatDate(ctime), name));
     }
 
-    protected void scanColumnWidths(SmbFile[] files)
+    protected void scanColumnWidths(SmbFile[] files) throws IOException
     {
         for (SmbFile f : files)
         {
-            String owner = "owner";
-            String group = "group";
+            String owner = formatUser(f.getOwnerUser());
+            String group = formatUser(f.getOwnerGroup());
 
             ownerColumnWidth = Math.max(ownerColumnWidth, owner.length());
             groupColumnWidth = Math.max(groupColumnWidth, group.length());
@@ -127,15 +121,4 @@ public class ListDirectoryCommand extends BaseCommand
         groupColumnWidth = Math.min(groupColumnWidth + 2, MAX_GROUP_COLUMN_WIDTH);
     }
 
-    public String toString()
-    {
-        String hostname = this.hostname != null ? this.hostname : "";
-        String sharename = this.sharename != null ? this.sharename : "";
-        String domain = this.domain != null ? this.domain : "";
-        String username = this.username != null ? this.username : "";
-        String password = this.password != null ? this.password : "";
-
-        return String.format("#<ListDirectoryCommand :hostname %s :share %s :dirpath %s :domain %s :username %s :password %s",
-                hostname, sharename, dirpath, domain, username, password.replaceAll(".", "*"));
-    }
 }
