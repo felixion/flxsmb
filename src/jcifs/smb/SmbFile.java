@@ -3028,4 +3028,24 @@ if (this instanceof SmbNamedPipe) {
         return getSecurity(false);
     }
 
+    /**
+     * Gets the server's time
+     * @return time on server (milliseconds since 1970)
+     * @throws SmbException error negotiating with server
+     */
+    public long serverTime() throws SmbException {
+        if (tree == null)
+            exists();
+
+        return tree.session.transport.server.serverTime;
+    }
+
+    /**
+     * Gets the server's time
+     * @return time on server
+     * @throws SmbException error negotiating with server
+     */
+    public Date getServerTime() throws SmbException {
+        return new Date(serverTime());
+    }
 }
