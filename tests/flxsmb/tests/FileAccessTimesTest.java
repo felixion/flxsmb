@@ -2,6 +2,7 @@ package flxsmb.tests;
 
 import flxsmb.tests.utils.ShareInfo;
 import flxsmb.tests.utils.SmbTestCase;
+import jcifs.smb.NtlmPasswordAuthentication;
 import jcifs.smb.SmbFile;
 import org.testng.annotations.Test;
 
@@ -70,8 +71,32 @@ public class FileAccessTimesTest extends SmbTestCase
     }
 
     @Test
-    public void directoryAccessedTime()
+    public void directoryAccessedTime() throws Exception
     {
+        ShareInfo shareInfo = getWritableShare();
+        SmbFile dir = new SmbFile("smb://ubuntu.home/smbtest1/testdir", new NtlmPasswordAuthentication(shareInfo.getDomain(), shareInfo.getUsername(), shareInfo.getPassword()));
 
+        System.out.println(String.format("%s - %s", dir, dir.lastAccessed()));
+    }
+
+    /**
+     * Verifies that files returned from listFiles have correct accessed times.
+     */
+    @Test
+    public void testListedFileAccessTime() throws Exception
+    {
+        ShareInfo shareInfo = getWritableShare();
+        SmbFile file = getNewFile(shareInfo);
+        SmbFile shareRoot = getShareRoot(shareInfo);
+
+        for (SmbFile f : shareRoot.listFiles())
+        {
+            System.out.println(String.format("%s - %s", f, f.lastAccessed()));
+
+            if (f.getName().equals(file.getName()))
+            {
+                assert file.lastAccessed() == f.lastAccessed();
+            }
+        }
     }
 }

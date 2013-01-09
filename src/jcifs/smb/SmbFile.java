@@ -618,7 +618,7 @@ public class SmbFile extends URLConnection implements SmbConstants {
         getUncPath0();
     }
     SmbFile( SmbFile context, String name, int type,
-                int attributes, long createTime, long lastModified, long size )
+                int attributes, long createTime, long lastModified, long lastAccessed, long size )
                 throws MalformedURLException, UnknownHostException {
         this( context.isWorkgroup0() ?
             new URL( null, "smb://" + name + "/", Handler.SMB_HANDLER ) :
@@ -650,6 +650,7 @@ public class SmbFile extends URLConnection implements SmbConstants {
         this.attributes = attributes;
         this.createTime = createTime;
         this.lastModified = lastModified;
+        this.lastAccessed = lastAccessed;
         this.size = size;
         isExists = true;
 
@@ -1841,7 +1842,7 @@ if (this instanceof SmbNamedPipe) {
             if (name.length() > 0) {
                 // if !files we don't need to create SmbFiles here
                 SmbFile f = new SmbFile(this, name, e.getType(),
-                            ATTR_READONLY | ATTR_DIRECTORY, 0L, 0L, 0L );
+                            ATTR_READONLY | ATTR_DIRECTORY, 0L, 0L, 0L, 0L );
                 if (ff != null && ff.accept(f) == false)
                     continue;
                 if (files) {
@@ -1962,7 +1963,7 @@ if (this instanceof SmbNamedPipe) {
                 if (name.length() > 0) {
                     // if !files we don't need to create SmbFiles here
                     SmbFile f = new SmbFile(this, name, e.getType(),
-                                ATTR_READONLY | ATTR_DIRECTORY, 0L, 0L, 0L );
+                                ATTR_READONLY | ATTR_DIRECTORY, 0L, 0L, 0L, 0L );
                     if (ff != null && ff.accept(f) == false)
                         continue;
                     if (files) {
@@ -2028,7 +2029,7 @@ if (this instanceof SmbNamedPipe) {
                 }
                 if( name.length() > 0 ) {
                     SmbFile f = new SmbFile( this, name, TYPE_FILESYSTEM,
-                            e.getAttributes(), e.createTime(), e.lastModified(), e.length() );
+                            e.getAttributes(), e.createTime(), e.lastModified(), e.lastAccessed(), e.length() );
                     if( ff != null && ff.accept( f ) == false ) {
                         continue;
                     }
@@ -2173,6 +2174,7 @@ if (this instanceof SmbNamedPipe) {
             attributes = info.getAttributes();
             createTime = info.getCreateTime();
             lastModified = info.getLastWriteTime();
+            lastAccessed = info.getLastAccessTime();
 
             /* If any of the above fails, isExists will not be set true
              */
@@ -2207,6 +2209,7 @@ if (this instanceof SmbNamedPipe) {
                                     files[i].attributes,
                                     files[i].createTime,
                                     files[i].lastModified,
+                                    files[i].lastAccessed,
                                     files[i].size );
                     files[i].copyTo0( ndest, b, bsize, w, req, resp );
                 }
@@ -2399,6 +2402,7 @@ if (this instanceof SmbNamedPipe) {
             attributes = info.getAttributes();
             createTime = info.getCreateTime();
             lastModified = info.getLastWriteTime();
+            lastAccessed = info.getLastAccessTime();
 
             attrExpiration = System.currentTimeMillis() + attrExpirationPeriod;
             isExists = true;

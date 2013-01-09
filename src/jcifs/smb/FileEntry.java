@@ -7,5 +7,6 @@ public interface FileEntry {
     int getAttributes();
     long createTime();
     long lastModified();
+    long lastAccessed();
     long length();
 }
