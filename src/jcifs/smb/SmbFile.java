@@ -2582,6 +2582,22 @@ if (this instanceof SmbNamedPipe) {
         attrExpiration = 0;
     }
 
+    void setPathInformation( int attrs, long ctime, long atime, long mtime ) throws SmbException {
+    int f, dir;
+
+    exists();
+    dir = attributes & ATTR_DIRECTORY;
+
+    f = open0( O_RDONLY, FILE_WRITE_ATTRIBUTES,
+    dir, dir != 0 ? 0x0001 : 0x0040 );
+    send( new Trans2SetFileInformation( f, attrs | dir, ctime, atime, mtime ),
+    new Trans2SetFileInformationResponse() );
+    close( f, 0L );
+
+    attrExpiration = 0;
+    }
+
+
 /**
  * Set the create time of the file. The time is specified as milliseconds
  * from Jan 1, 1970 which is the same as that which is returned by the
@@ -2598,6 +2614,24 @@ if (this instanceof SmbNamedPipe) {
 
         setPathInformation( 0, time, 0L );
     }
+
+/**
+ * Set the access time of the file. The time is specified as milliseconds
+ * from Jan 1, 1970 which is the same as that which is returned by the
+ * <tt>createTime()</tt> method.
+ * <p/>
+ * This method does not apply to workgroups, servers, or shares.
+ *
+ * @param time the create time as milliseconds since Jan 1, 1970
+ */
+    public void setAccessTime( long time ) throws SmbException {
+        if( getUncPath0().length() == 1 ) {
+            throw new SmbException( "Invalid operation for workgroups, servers, or shares" );
+        }
+
+        setPathInformation( 0, 0L, time, 0L );
+    }
+
 /**
  * Set the last modified time of the file. The time is specified as milliseconds
  * from Jan 1, 1970 which is the same as that which is returned by the

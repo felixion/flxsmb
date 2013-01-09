@@ -25,10 +25,24 @@ class Trans2SetFileInformation extends SmbComTransaction {
     private int fid;
     private int attributes;
     private long createTime, lastWriteTime;
+    private long accessTime;
 
     Trans2SetFileInformation( int fid, int attributes, long createTime, long lastWriteTime ) {
         this.fid = fid;
         this.attributes = attributes;
+        this.createTime = createTime;
+        this.lastWriteTime = lastWriteTime;
+        command = SMB_COM_TRANSACTION2;
+        subCommand = TRANS2_SET_FILE_INFORMATION;
+        maxParameterCount = 6;
+        maxDataCount = 0;
+        maxSetupCount = (byte)0x00;
+    }
+
+    Trans2SetFileInformation( int fid, int attributes, long createTime, long accessTime, long lastWriteTime ) {
+        this.fid = fid;
+        this.attributes = attributes;
+        this.accessTime = accessTime;
         this.createTime = createTime;
         this.lastWriteTime = lastWriteTime;
         command = SMB_COM_TRANSACTION2;
@@ -58,18 +72,21 @@ class Trans2SetFileInformation extends SmbComTransaction {
     int writeDataWireFormat( byte[] dst, int dstIndex ) {
         int start = dstIndex;
 
+        // create time
         writeTime( createTime, dst, dstIndex ); dstIndex += 8;
-        writeInt8( 0L, dst, dstIndex ); dstIndex += 8;
+        // access time
+        writeTime( accessTime, dst, dstIndex ); dstIndex += 8;
+        // last write time [modification]
         writeTime( lastWriteTime, dst, dstIndex ); dstIndex += 8;
         writeInt8( 0L, dst, dstIndex ); dstIndex += 8;
 /* Samba 2.2.7 needs ATTR_NORMAL
  */
-        writeInt2( 0x80 | attributes, dst, dstIndex ); dstIndex += 2; 
-                                        /* 6 zeros observed with NT */
+        writeInt2( 0x80 | attributes, dst, dstIndex ); dstIndex += 2;
+        /* 6 zeros observed with NT */
         writeInt8( 0L, dst, dstIndex ); dstIndex += 6;
 
-                /* Also observed 4 byte alignment but we stick
-                 * with the default for jCIFS which is 2 */
+        /* Also observed 4 byte alignment but we stick
+* with the default for jCIFS which is 2 */
 
         return dstIndex - start;
     }
