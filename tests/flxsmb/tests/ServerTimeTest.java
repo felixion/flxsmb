@@ -19,11 +19,11 @@ public class ServerTimeTest extends SmbTestCase
 
         Date serverTime = shareRoot.getServerTime();
 
-        _logger.info(String.format("Server time: %s", serverTime));
+        _logger.info(String.format("Server time: %s (%s)", serverTime, serverTime.getTime()));
 
         Date now = new Date();
-        Date minServerTime = new Date(now.getTime() - 2 * 60 * 1000);
-        Date maxServerTime = new Date(now.getTime() + 2 * 60 * 1000);
+        Date minServerTime = new Date(now.getTime() - 2 * 1000);
+        Date maxServerTime = new Date(now.getTime() + 2 * 1000);
 
         boolean valid = serverTime.after(minServerTime) && serverTime.before(maxServerTime);
 
