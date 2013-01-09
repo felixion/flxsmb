@@ -12,15 +12,16 @@ import java.util.Date;
 public abstract class BaseCommand
 {
     public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
     protected String hostname;
     protected String sharename;
     protected String domain;
     protected String username;
     protected String password;
     protected String dirpath;
+
     protected boolean recurse = false;
     protected boolean verbose = false;
-
     protected boolean _filepathRequired = true;
 
     public abstract void run() throws Exception;
