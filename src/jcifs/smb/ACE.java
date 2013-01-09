@@ -74,7 +74,7 @@ public class ACE {
 
     boolean allow;
     int flags;
-    public int access; // dont comment; default
+    int access;
     SID sid;
 
     /**
