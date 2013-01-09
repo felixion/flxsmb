@@ -37,7 +37,7 @@ public class SmbTestCase
     protected ShareInfo getWritableShare() throws Exception
     {
 
-        Set<ShareInfo> testShareInfo = getTestShareInfo("data/test-sources.properties");
+        Set<ShareInfo> testShareInfo = getTestShareInfo("test-sources.properties");
         return testShareInfo.iterator().next();
     }
 

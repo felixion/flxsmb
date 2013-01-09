@@ -2935,38 +2935,115 @@ if (this instanceof SmbNamedPipe) {
             }
         }
     }
-/**
- * Return an array of Access Control Entry (ACE) objects representing
- * the security descriptor associated with this file or directory.
- * If no DACL is present, null is returned. If the DACL is empty, an array with 0 elements is returned.
- * @param resolveSids Attempt to resolve the SIDs within each ACE form
- * their numeric representation to their corresponding account names.
- */
-    public ACE[] getSecurity(boolean resolveSids) throws IOException {
-        int f;
-        ACE[] aces;
 
-        f = open0( O_RDONLY, READ_CONTROL, 0, isDirectory() ? 1 : 0 );
+    /**
+     * -------------- MPRV PATCH -------------
+     * Get security descriptor
+     * @param resolveSids     true if the sids are resolved
+     * @return security descriptor
+     * @throws IOException
+     */
+    public SecurityDescriptor getSecurityDescriptor(boolean resolveSids) throws IOException {
+         int f;
+         ACE[] aces;
+
+        f = open0(O_RDONLY, READ_CONTROL, 0, isDirectory() ? 1 : 0);
+
+         /*
+          * NtTrans Query Security Desc Request / Response
+          */
+
+        NtTransQuerySecurityDesc request = new NtTransQuerySecurityDesc(f, 0x04);
+         NtTransQuerySecurityDescResponse response = new NtTransQuerySecurityDescResponse();
+
+         try {
+            send(request, response);
+         } finally {
+            close(f, 0L);
+         }
+
+        return response.securityDescriptor;
+    }
+
+    /**
+     * Return an array of Access Control Entry (ACE) objects representing
+     * the security descriptor associated with this files or directory.
+     * If no DACL is present, null is returned. If the DACL is empty, an array with 0 elements is returned.
+     *
+     * @param resolveSids Attempt to resolve the SIDs within each ACE form
+     *                    their numeric representation to their corresponding account names.
+     */
+    public ACE[] getSecurity(boolean resolveSids) throws IOException {
+        SecurityDescriptor sd = getSecurityDescriptor(resolveSids);
+        ACE[] aces = sd.aces;
+         if (aces != null)
+             processAces(aces, resolveSids);
+
+         return aces;
+     }
+
+    public SID getOwnerUser() throws IOException {
+
+        int f = open0(O_RDONLY, READ_CONTROL, 0, isDirectory() ? 1 : 0);
 
         /*
          * NtTrans Query Security Desc Request / Response
          */
 
-        NtTransQuerySecurityDesc request = new NtTransQuerySecurityDesc( f, 0x04 );
+        NtTransQuerySecurityDesc request = new NtTransQuerySecurityDesc(f, 0x01);
         NtTransQuerySecurityDescResponse response = new NtTransQuerySecurityDescResponse();
+        send(request, response);
+
+        close(f, 0L);
+        return response.securityDescriptor.owner_user;
+    }
+
+    public SID getOwnerGroup() throws IOException {
+
+        int f = open0(O_RDONLY, READ_CONTROL, 0, isDirectory() ? 1 : 0);
+
+        /*
+         * NtTrans Query Security Desc Request / Response
+         */
+
+        NtTransQuerySecurityDesc request = new NtTransQuerySecurityDesc(f, 0x02);
+        NtTransQuerySecurityDescResponse response = new NtTransQuerySecurityDescResponse();
+        send(request, response);
+
+        close(f, 0L);
+        return response.securityDescriptor.owner_group;
+    }
+
+    /**
+     * -------------- MPRV PATCH -------------
+     * @param sd security descriptor that will be revoked
+     * @param sid user/group for which the permission will be revoked
+     * @param maskToRevoke mask to revoke
+     * @return error code
+     * @throws IOException
+     */
+    public int revokePermission(SecurityDescriptor sd, SID sid, int maskToRevoke) throws IOException {
+        int f;
+
+        f = open0(O_RDWR, WRITE_DAC, 0, isDirectory() ? 1 : 0);
+
+        /*
+         * NtTrans Update Security Desc Request / Response
+         */
+
+        NtTransRevokePermissionInSecurityDesc request = new NtTransRevokePermissionInSecurityDesc(f, 0x04, sd, sid, maskToRevoke);
+        NtTransSetSecurityDescResponse response = new NtTransSetSecurityDescResponse();
 
         try {
-            send( request, response );
+            send(request, response);
         } finally {
-            close( f, 0L );
+            close(f, 0L);
         }
 
-        aces = response.securityDescriptor.aces;
-        if (aces != null)
-            processAces(aces, resolveSids);
+        return response.errorCode;
 
-        return aces;
     }
+
 /**
  * Return an array of Access Control Entry (ACE) objects representing
  * the share permissions on the share exporting this file or directory.
@@ -3051,5 +3128,35 @@ if (this instanceof SmbNamedPipe) {
      */
     public Date getServerTime() throws SmbException {
         return new Date(serverTime());
+    }
+
+    public String getFilesystem() throws SmbException
+    {
+        if (tree == null)
+            exists();
+
+        return tree.filesystem;
+    }
+
+    public int setOwner(SID owner) throws IOException
+    {
+        int f;
+
+        f = open0(O_RDWR, WRITE_OWNER, 0, isDirectory() ? 1 : 0);
+
+        /*
+         * NtTrans Update Security Desc Request / Response
+         */
+
+        NtTransSetSecurityDescOwner request = new NtTransSetSecurityDescOwner(f, owner);
+        NtTransSetSecurityDescResponse response = new NtTransSetSecurityDescResponse();
+
+        try {
+            send(request, response);
+        } finally {
+            close(f, 0L);
+        }
+
+        return response.errorCode;
     }
 }
