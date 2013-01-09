@@ -1,4 +1,6 @@
-package flxsmb.tests.utils;
+package flxsmb.tests.data;
+
+import jcifs.smb.NtlmPasswordAuthentication;
 
 public class ShareInfo
 {
@@ -15,6 +17,11 @@ public class ShareInfo
         this.domain = domain;
         this.username = username;
         this.password = password;
+    }
+
+    public NtlmPasswordAuthentication getAuthenticator()
+    {
+        return new NtlmPasswordAuthentication(domain, username, password);
     }
 
     @Override
