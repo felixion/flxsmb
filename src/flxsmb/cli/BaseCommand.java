@@ -18,6 +18,8 @@ public abstract class BaseCommand
     protected String username;
     protected String password;
     protected String dirpath;
+    protected boolean recurse = false;
+    protected boolean verbose = false;
 
     public abstract void run() throws Exception;
 
@@ -64,6 +66,16 @@ public abstract class BaseCommand
             else if (flag.equals("-P") && hasAnother)
             {
                 password = args[i + 1];
+            }
+
+            else if (flag.equals("-R"))
+            {
+                recurse = true;
+            }
+
+            else if (flag.equals("-V"))
+            {
+                verbose = true;
             }
         }
     }

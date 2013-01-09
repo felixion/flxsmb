@@ -42,7 +42,9 @@ public class ListDirectoryCommand extends BaseCommand
         catch (Exception e)
         {
             System.out.println(String.format("Encountered error listing directory [%s:%s:%s]\n\t - %s", command.hostname, command.sharename, command.dirpath, e.getMessage()));
-            e.printStackTrace();
+
+            if (command.verbose)
+                e.printStackTrace();
         }
     }
 
