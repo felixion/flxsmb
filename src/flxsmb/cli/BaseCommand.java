@@ -50,6 +50,9 @@ public abstract class BaseCommand
 
     protected void scanCommandLineArgs(String[] args)
     {
+        if (args.length < 1)
+            throw new IllegalArgumentException("no destination UNC path specified");
+
         String uncPath = args[0];
         parseUncPath(uncPath);
 
