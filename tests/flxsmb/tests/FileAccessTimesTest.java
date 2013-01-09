@@ -1,71 +1,77 @@
 package flxsmb.tests;
 
 import flxsmb.tests.utils.ShareInfo;
+import flxsmb.tests.utils.SmbTestCase;
+import jcifs.smb.SmbFile;
 import org.testng.annotations.Test;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Properties;
-import java.util.Set;
+import java.io.OutputStream;
+import java.util.*;
 
-public class FileAccessTimesTest
+/**
+ * Tests getting and setting access times for files.
+ */
+public class FileAccessTimesTest extends SmbTestCase
 {
     @Test
     public void fileAccessTimesTest() throws Exception
     {
-//        System.out.println(getClass().getResourceAsStream("test-sources.properties"));
-        for (ShareInfo i : getTestShareInfo("test-sources.properties"))
+        ShareInfo shareInfo = getWritableShare();
+        SmbFile file = getNewFile(shareInfo);
+
+        Date serverTime = getShareRoot(shareInfo).getServerTime();
+        Date minAccessTime = new Date(serverTime.getTime() - 1000);
+        Date maxAccessTime = new Date(serverTime.getTime() + 1000);
+
+        Date lastAccessed = new Date(file.lastAccessed());
+
+        _logger.warning(String.format("checking access time %s [server time %s]", lastAccessed, serverTime));
+
+        boolean valid = lastAccessed.before(maxAccessTime) && lastAccessed.after(minAccessTime);
+
+        if (!valid)
         {
-            System.out.println(i);
-        }
-    }
-
-    protected Properties loadTestProperties(String propertiesFileName) throws IOException
-    {
-        InputStream inputStream = getClass().getResourceAsStream(propertiesFileName);
-
-        Properties properties = new Properties();
-        properties.load(inputStream);
-
-        return properties;
-    }
-
-    protected Set<ShareInfo> getTestShareInfo(String propertiesFileName) throws Exception
-    {
-        Properties properties = loadTestProperties(propertiesFileName);
-
-        Set<ShareInfo> shareInfo = new HashSet<ShareInfo>();
-
-        String[] testShares = properties.getProperty("testShares").split(",");
-        for (String testShareName : testShares)
-        {
-            String hostname = properties.getProperty(testShareName + ".hostname");
-            String sharename = properties.getProperty(testShareName + ".share");
-            String domain = properties.getProperty(testShareName + ".domain");
-            String username = properties.getProperty(testShareName + ".username");
-            String password = properties.getProperty(testShareName + ".password");
-
-            System.out.println(String.format("hostname %s share %s domain %s username %s password %s", hostname, sharename, domain, username, password));
-
-            shareInfo.add(new ShareInfo(hostname, sharename, domain, username, password));
+            _logger.warning(String.format("new file access date must be between %s and %s", minAccessTime, maxAccessTime));
         }
 
-        return shareInfo;
+        assert valid;
     }
 
-    protected ShareInfo getShareInfo(Properties p, String testShareName)
+    @Test
+    public void modifiedFileAccessTimesTest() throws Exception
     {
-        String hostname = p.getProperty(testShareName + ".hostname");
-        String sharename = p.getProperty(testShareName + ".share");
-        String domain = p.getProperty(testShareName + ".domain");
-        String username = p.getProperty(testShareName + ".username");
-        String password = p.getProperty(testShareName + ".password");
+        ShareInfo shareInfo = getWritableShare();
+        SmbFile file = getNewFile(shareInfo);
 
-        System.out.println(String.format("hostname %s share %s domain %s username %s password %s", hostname, sharename, domain, username, password));
+        Date serverTime = getShareRoot(shareInfo).getServerTime();
+        Date minAccessTime = new Date(serverTime.getTime() - 1000);
+        Date maxAccessTime = new Date(serverTime.getTime() + 1000);
 
-        return new ShareInfo(hostname, sharename, domain, username, password);
+        Date origLastAccessed = new Date(file.lastAccessed());
+
+        OutputStream outputStream = file.getOutputStream();
+        outputStream.write("test update".getBytes());
+
+        Date newLastAccessed = new Date(file.lastAccessed());
+
+        _logger.warning(String.format("checking access time %s [orig %s server time %s]", newLastAccessed, origLastAccessed, serverTime));
+
+        boolean valid = origLastAccessed.before(maxAccessTime) && origLastAccessed.after(minAccessTime) && newLastAccessed != origLastAccessed;
+
+        if (!valid)
+        {
+            _logger.warning(String.format("new file access date must be between %s and %s", minAccessTime, maxAccessTime));
+        }
+
+        assert valid;
+    }
+
+    @Test
+    public void directoryAccessedTime()
+    {
+
     }
 }
