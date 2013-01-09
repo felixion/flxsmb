@@ -22,5 +22,6 @@ interface Info {
     int getAttributes();
     long getCreateTime();
     long getLastWriteTime();
+    long getLastAccessTime();
     long getSize();
 }

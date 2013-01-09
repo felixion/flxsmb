@@ -19,6 +19,8 @@
 package jcifs.smb;
 
 import java.util.Date;
+import java.util.logging.Logger;
+
 import jcifs.util.Hexdump;
 
 class SmbComQueryInformationResponse extends ServerMessageBlock implements Info {
@@ -41,6 +43,10 @@ class SmbComQueryInformationResponse extends ServerMessageBlock implements Info 
     }
     public long getLastWriteTime() {
         return lastWriteTime + serverTimeZoneOffset;
+    }
+    public long getLastAccessTime() {
+        Logger.getAnonymousLogger().warning("SmbComQueryInformationResponse.getLastAccessTime not implemented");
+        return 0;
     }
     public long getSize() {
         return fileSize;

@@ -413,6 +413,7 @@ public class SmbFile extends URLConnection implements SmbConstants {
     private String share;            // Can be null
     private long createTime;
     private long lastModified;
+    private long lastAccessed;
     private int attributes;
     private long attrExpiration;
     private long size;
@@ -1419,6 +1420,7 @@ if (this instanceof SmbNamedPipe) {
                 attributes = info.getAttributes();
                 createTime = info.getCreateTime();
                 lastModified = info.getLastWriteTime();
+                lastAccessed = info.getLastAccessTime();
             }
 
             /* If any of the above fail, isExists will not be set true
@@ -1578,6 +1580,23 @@ if (this instanceof SmbNamedPipe) {
         if( getUncPath0().length() > 1 ) {
             exists();
             return lastModified;
+        }
+        return 0L;
+    }
+/**
+ * Retrieve the last time the file represented by this
+ * <code>SmbFile</code> was accessed. The value returned is suitable for
+ * constructing a {@link java.util.Date} object (i.e. seconds since Epoch
+ * 1970). Times should be the same as those reported using the properties
+ * dialog of the Windows Explorer program.
+ *
+ * @return The number of milliseconds since the 00:00:00 GMT, January 1,
+ *         1970 as a <code>long</code> value
+ */
+    public long lastAccessed() throws SmbException {
+        if( getUncPath0().length() > 1 ) {
+            exists();
+            return lastAccessed;
         }
         return 0L;
     }

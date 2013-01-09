@@ -19,6 +19,8 @@
 package jcifs.smb;
 
 import java.util.Date;
+import java.util.logging.Logger;
+
 import jcifs.util.Hexdump;
 
 class Trans2QueryPathInformationResponse extends SmbComTransactionResponse {
@@ -42,6 +44,9 @@ class Trans2QueryPathInformationResponse extends SmbComTransactionResponse {
         }
         public long getLastWriteTime() {
             return lastWriteTime;
+        }
+        public long getLastAccessTime() {
+            return lastAccessTime;
         }
         public long getSize() {
             return 0L;
@@ -70,6 +75,10 @@ class Trans2QueryPathInformationResponse extends SmbComTransactionResponse {
         }
         public long getLastWriteTime() {
             return 0L;
+        }
+        public long getLastAccessTime() {
+            Logger.getAnonymousLogger().warning("SmbQueryFileStandardInfo.getLastAccessTime not implemented");
+            return 0;
         }
         public long getSize() {
             return endOfFile;
