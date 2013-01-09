@@ -26,7 +26,7 @@ public class SetPermissionsTests extends SmbTestCase
         ACE[] acesBefore = securityDescriptorBefore.aces;
         System.out.println("ACEs before set: ");
         for (int ai = 0; ai < acesBefore.length; ai++) {
-            System.out.println(acesBefore[ai].access);
+//            System.out.println(acesBefore[ai].access);
         }
 
 
@@ -40,7 +40,7 @@ public class SetPermissionsTests extends SmbTestCase
         ACE[] acesAfter = securityDescriptorAfter.aces;
         System.out.println("ACEs after set: ");
         for (int ai = 0; ai < acesAfter.length; ai++) {
-            System.out.println(acesAfter[ai].access);
+//            System.out.println(acesAfter[ai].access);
         }
     }
 }
