@@ -1,7 +1,11 @@
 <project name="jcifs" default="usage" basedir=".">
 
-    <property name="version" value="1.3.17"/>
-    <property name="reldate" value="Oct 18, 2011"/>
+    <property name="version" value="1.3.17-flx.1"/>
+    <property name="reldate" value="Jan. 9, 2013"/>
+
+    <path id="classpath">
+        <fileset dir="lib"><include name="**/*.jar"/></fileset>
+    </path>
 
     <target name="usage">
         <echo>
@@ -41,8 +45,8 @@ dependencies: Checks that all class dependencies are met.
     </target>
 
     <target name="dependencies">
-        <available classname="javax.servlet.Servlet" property="hasServlet"/>
-        <antcall target="hasServlet"/>
+        <!--<available classname="javax.servlet.Servlet" property="hasServlet"/>-->
+        <!--<antcall target="hasServlet"/>-->
     </target>
 
     <target name="compile" depends="dependencies">
@@ -52,19 +56,14 @@ dependencies: Checks that all class dependencies are met.
             source="1.5"
             target="1.5"
             fork="yes"
-            executable="/usr/local/java5/bin/javac"
-            compiler="javac1.5"
             debug="on">
-<!--
-            <compilerarg line="-Xlint:deprecation -Xlint:unchecked"/>
--->
+            <classpath refid="classpath"></classpath>
         </javac>
-        <copy file="src/jcifs/util/mime.map" tofile="build/jcifs/util/mime.map" overwrite="yes"/>
-        <copy file="src/jcifs/http/ne.css" tofile="build/jcifs/http/ne.css" overwrite="yes"/>
     </target>
 
     <target name="jar" depends="compile">
-        <jar jarfile="jcifs-${version}.jar">
+        <mkdir dir="dist"/>
+        <jar jarfile="dist/jcifs-${version}.jar">
             <manifest>
                 <attribute name="Bundle-Version" value="${version}"/>
                 <attribute name="Bundle-Name" value="jcifs"/>
@@ -114,10 +113,11 @@ dependencies: Checks that all class dependencies are met.
         <!--copy file="docs/allclasses-frame.html" tofile="docs/api/allclasses-frame.html" overwrite="yes"/-->
     </target>
 
-    <target name="all" depends="jar,docs,javadoc"/>
+    <target name="all" depends="jar,javadoc"/>
 
     <target name="clean">
         <delete dir="build" quiet="true"/>
+        <delete dir="dist" quiet="true"/>
     </target>
 
     <target name="allclean" depends="clean">
@@ -147,106 +147,5 @@ dependencies: Checks that all class dependencies are met.
     </target>
 
     <target name="jcifs" depends="all,clean"/>
-
-    <target name="distrib" depends="jcifs">
-        <delete dir="dist_tmp" quiet="true"/>
-        <copy todir="dist_tmp/jcifs_${version}">
-            <fileset dir=".">
-                <include name="build.xml"/>
-                <include name="jcifs-${version}.jar"/>
-                <include name="README.txt"/>
-                <include name="LICENSE.txt"/>
-                <include name="docs/**"/>
-                <include name="examples/**"/>
-                <include name="src/**"/>
-                <include name="patches/**"/>
-            </fileset>
-        </copy>
-        <fixcrlf srcdir="dist_tmp" tab="remove" tablength="4">
-            <include name="**/*.java"/>
-            <include name="**/*.c"/>
-            <include name="**/*.h"/>
-            <include name="**/*.css"/>
-            <include name="**/*.html"/>
-            <include name="**/*.xml"/>
-            <include name="**/*.txt"/>
-            <include name="**/*.jav"/>
-            <include name="**/*.bak"/>
-            <include name="**/*.prp"/>
-            <include name="**/*.map"/>
-            <include name="**/*.patch"/>
-        </fixcrlf>
-        <fixcrlf srcdir="dist_tmp" eol="crlf">
-            <include name="**/*.java"/>
-            <include name="**/*.c"/>
-            <include name="**/*.h"/>
-            <include name="**/*.css"/>
-            <include name="**/*.html"/>
-            <include name="**/*.xml"/>
-            <include name="**/*.txt"/>
-            <include name="**/*.jav"/>
-            <include name="**/*.bak"/>
-            <include name="**/*.prp"/>
-            <include name="**/*.map"/>
-            <include name="**/*.patch"/>
-            <include name="**/Makefile"/>
-        </fixcrlf>
-        <zip zipfile="jcifs-${version}.zip" basedir="dist_tmp"/>
-        <fixcrlf srcdir="dist_tmp" eol="lf">
-            <include name="**/*.java"/>
-            <include name="**/*.c"/>
-            <include name="**/*.h"/>
-            <include name="**/*.css"/>
-            <include name="**/*.html"/>
-            <include name="**/*.xml"/>
-            <include name="**/*.txt"/>
-            <include name="**/*.jav"/>
-            <include name="**/*.bak"/>
-            <include name="**/*.prp"/>
-            <include name="**/*.map"/>
-            <include name="**/*.patch"/>
-            <include name="**/Makefile"/>
-        </fixcrlf>
-        <tar tarfile="jcifs-${version}.tar" basedir="dist_tmp"/>
-        <delete dir="dist_tmp" quiet="true"/>
-        <gzip src="jcifs-${version}.tar" zipfile="jcifs-${version}.tgz"/>
-        <delete file="jcifs-${version}.tar" quiet="true"/>
-    </target>
-
-    <target name="checksum">
-        <checksum file="jcifs-${version}.zip"/>
-        <checksum file="jcifs-${version}.tgz"/>
-    </target>
-
-    <target name="docs">
-        <style basedir="docs" destdir="docs" extension=".html" style="plain.xsl"
-                includes="pipes.xml,faq.xml,wins.xml,capture.xml,httpclient.xml,resolver.xml,authhandler.xml,ntlmhttpauth.xml">
-            <param name="date" expression="${reldate}"/>
-            <param name="lib" expression="jcifs-${version}"/>
-            <param name="title" expression="JCIFS"/>
-            <param name="copyright" expression="The JCIFS Project"/>
-            <param name="edge" expression="#808080"/>
-            <param name="mainpane" expression="#ffffff"/>
-            <param name="leftpane" expression="#FFD700"/>
-            <param name="middlepane" expression="#ffffff"/>
-            <param name="footer" expression="#808080"/>
-            <param name="text1" expression="#000000"/>
-            <param name="text2" expression="#000080"/>
-        </style>
-        <style basedir="docs" destdir="docs" extension=".html" style="proj.xsl"
-                includes="index.xml">
-            <param name="date" expression="${reldate}"/>
-            <param name="lib" expression="jcifs-${version}"/>
-            <param name="title" expression="JCIFS"/>
-            <param name="copyright" expression="The JCIFS Project"/>
-            <param name="edge" expression="#808080"/>
-            <param name="mainpane" expression="#ffffff"/>
-            <param name="leftpane" expression="#e0e0FF"/>
-            <param name="middlepane" expression="#ffffff"/>
-            <param name="footer" expression="#808080"/>
-            <param name="text1" expression="#000000"/>
-            <param name="text2" expression="#000080"/>
-        </style>
-    </target>
 
 </project>

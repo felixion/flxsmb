@@ -57,6 +57,9 @@ public class SmbShareInfo implements FileEntry {
     public long lastModified() {
         return 0L;
     }
+    public long lastAccessed() {
+        return 0L;
+    }
     public long length() {
         return 0L;
     }

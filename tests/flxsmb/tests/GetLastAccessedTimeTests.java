@@ -36,11 +36,18 @@ public class GetLastAccessedTimeTests extends SmbTestCase
     public void testFileLastAccessedDate() throws Exception
     {
         ShareInfo shareInfo = getWritableShare();
-        SmbFile file = getTemporaryFile(shareInfo);
 
-        Date serverTime = getShareRoot(shareInfo).getServerTime();
+        SmbFile share = getShareRoot(shareInfo);
+        for (SmbFile f : share.listFiles())
+        {
+            System.out.println(f.toString() + " " + f.lastAccessed());
+        }
 
-        assertFileAccessTimeRange(file, serverTime, -1);
+//        SmbFile file = getTemporaryFile(shareInfo);
+//
+//        Date serverTime = getShareRoot(shareInfo).getServerTime();
+//
+//        assertFileAccessTimeRange(file, serverTime, -1);
     }
 
     /**
