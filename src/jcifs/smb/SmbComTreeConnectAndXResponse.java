@@ -27,6 +27,7 @@ class SmbComTreeConnectAndXResponse extends AndXServerMessageBlock {
 
     boolean supportSearchBits, shareIsInDfs;
     String service, nativeFileSystem = "";
+    String filesystemType;
 
     SmbComTreeConnectAndXResponse( ServerMessageBlock andx ) {
         super( andx );
@@ -49,10 +50,18 @@ class SmbComTreeConnectAndXResponse extends AndXServerMessageBlock {
         int len = readStringLength( buffer, bufferIndex, 32 );
         try {
             service = new String( buffer, bufferIndex, len, "ASCII" );
+
+            bufferIndex += len + 1;
+
+            int filesystemTypeLength = readUnicodeLength(buffer, bufferIndex, 32);
+            filesystemType = new String(buffer, bufferIndex, filesystemTypeLength, UNI_ENCODING);
+
+            bufferIndex += filesystemTypeLength + 2;
+
         } catch( UnsupportedEncodingException uee ) {
             return 0;
         }
-        bufferIndex += len + 1;
+
         // win98 observed not returning nativeFileSystem
 /* Problems here with iSeries returning ASCII even though useUnicode = true
  * Fortunately we don't really need nativeFileSystem for anything.
@@ -72,6 +81,22 @@ class SmbComTreeConnectAndXResponse extends AndXServerMessageBlock {
             ",service=" + service +
             ",nativeFileSystem=" + nativeFileSystem + "]" );
         return result;
+    }
+
+    /**
+     * Determines the length of a unicode string by reading forward to find the 0x0000
+     */
+    int readUnicodeLength( byte[] src, int srcIndex, int max ) {
+
+        for (int i = 0; i < max - 1; i++)
+        {
+            if (src[srcIndex + i] == (byte)0x00 && src[srcIndex + i + 1] == (byte)0x00)
+            {
+                return i + 1;
+            }
+        }
+
+        throw new RuntimeException( "zero termination not found: " + this );
     }
 }
 

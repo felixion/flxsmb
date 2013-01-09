@@ -3126,6 +3126,14 @@ if (this instanceof SmbNamedPipe) {
         return new Date(serverTime());
     }
 
+    public String getFilesystem() throws SmbException
+    {
+        if (tree == null)
+            exists();
+
+        return tree.filesystem;
+    }
+
     public int setOwner(SID owner) throws IOException
     {
         int f;

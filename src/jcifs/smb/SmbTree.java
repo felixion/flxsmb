@@ -38,6 +38,7 @@ class SmbTree {
 
     String share;
     String service = "?????";
+    String filesystem = "?????";
     String service0;
     SmbSession session;
     boolean inDfs, inDomainDfs;
@@ -177,6 +178,7 @@ synchronized (session.transport()) {
     
             tid = response.tid;
             service = response.service;
+            filesystem = response.filesystemType;
             inDfs = response.shareIsInDfs;
             tree_num = tree_conn_counter++;
     
