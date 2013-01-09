@@ -21,6 +21,8 @@ public abstract class BaseCommand
     protected boolean recurse = false;
     protected boolean verbose = false;
 
+    protected boolean _filepathRequired = true;
+
     public abstract void run() throws Exception;
 
     protected void promptForPassword() throws IOException
@@ -35,7 +37,7 @@ public abstract class BaseCommand
 
     protected void validateArguments()
     {
-        if (hostname == null || sharename == null || dirpath == null)
+        if (hostname == null || sharename == null || (dirpath == null && _filepathRequired))
             throw new IllegalArgumentException(String.format("invalid UNC path //%s/%s/%s", hostname, sharename, dirpath));
 
         if (domain == null)
@@ -92,12 +94,12 @@ public abstract class BaseCommand
 
         String[] parts = uncPath.split("/", 5);
 
-        if (parts.length != 5)
+        if (parts.length < 4 || parts.length > 5)
             throw new IllegalArgumentException(String.format("invalid UNC path [%s]", uncPath));
 
         hostname = parts[2];
         sharename = parts[3];
-        dirpath = parts[4];
+        dirpath = parts.length == 5 ? parts[4] : null;
     }
 
     protected void parseUsername(String username)
