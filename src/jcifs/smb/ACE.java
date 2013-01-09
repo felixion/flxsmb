@@ -74,7 +74,7 @@ public class ACE {
 
     boolean allow;
     int flags;
-    int access;
+    public int access; // dont comment; default
     SID sid;
 
     /**
@@ -151,6 +151,60 @@ public class ACE {
         bi += 4;
         sid = new SID(buf, bi);
         return size;
+    }
+
+    /**
+     * -------------- MPRV PATCH -------------
+     * Encode ACE into byte array
+     * @param buf destination array
+     * @param bi starting index in the destination array
+     * @return size of the ace (number of bytes)
+     */
+    int encode( byte[] buf, int bi ) {
+        return encode(buf,bi,null);
+    }
+
+    /**
+     * * -------------- MPRV PATCH -------------
+     * Encode ACE into byte array
+     * @param buf destination array
+     * @param bi starting index in the destination array
+     * @param aceAccess ace access mask to be encoded. In case of null, original ace access will be incoded
+     * @return size of the ace (number of bytes)
+     */
+    int encode( byte[] buf, int bi, Integer aceAccess ) {
+
+        buf[bi++] = allow ? (byte)0x00 : (byte)0x01;
+        buf[bi++] = (byte)flags;
+
+        int size = getACESize();
+        ServerMessageBlock.writeInt2(size,buf,bi);
+        bi+=2;
+
+        ServerMessageBlock.writeInt4(aceAccess != null ? aceAccess : access,buf,bi);
+        bi+=4;
+
+        byte[] sidArr = SID.toByteArray(sid);
+        ServerMessageBlock.writeByteArr(SID.toByteArray(sid),buf,bi);
+        bi+=sidArr.length;
+
+        return size;
+    }
+
+    /**
+     * -------------- MPRV PATCH -------------
+     * Get ACE size. ACE size is:
+     * isAllow - 1 byte
+     * flags - 1 byte
+     * size - 2 bytes
+     * access - 4 bytes
+     * sid - sizeOf(SID)
+     * ------------------------
+     * @return ACE size = num of bytes
+     */
+    int getACESize(){
+        byte[] sidArr = SID.toByteArray(sid);
+        return 1 + 1 + 2 + 4 + sidArr.length;
     }
 
     void appendCol(StringBuffer sb, String str, int width) {

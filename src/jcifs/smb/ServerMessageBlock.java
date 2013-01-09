@@ -52,6 +52,21 @@ abstract class ServerMessageBlock extends Response implements Request, SmbConsta
         dst[++dstIndex] = (byte)(val >>= 8);
         dst[++dstIndex] = (byte)(val >> 8);
     }
+
+    /**
+     * -------------- MPRV PATCH -------------
+     * Write bytes from source arrayace to destination array
+     * @param src source byte array
+     * @param dst destination byte array
+     * @param dstIndex starting index in destination array
+     * @return number of written bytes
+     */
+    static int writeByteArr( byte[] src, byte[] dst, int dstIndex ) {
+        for(int i = 0; i < src.length; i++){
+            dst[dstIndex + i] = src[i];
+        }
+        return src.length;
+    }
     static int readInt2( byte[] src, int srcIndex ) {
         return ( src[srcIndex] & 0xFF ) +
                 (( src[srcIndex + 1] & 0xFF ) << 8 );
