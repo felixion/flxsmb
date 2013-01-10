@@ -5,4 +5,4 @@ echo p: $PROJECTDIR
 
 CLASSPATH=$PROJECTDIR/jcifs-1.3.17.jar
 
-java -cp $CLASSPATH flxsmb.cli.LookupSidsCommand "$@"
+java -cp $CLASSPATH flxsmb.cli.LookupAccountInfoCommand "$@"

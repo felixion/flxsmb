@@ -11,7 +11,7 @@ import java.util.logging.Logger;
 /**
  * CLI command for looking up account information associated with a SID.
  *
- * Usage: flxsmb.cli.LookupSidsCommand //hostname/share -u domain/username -p password --user S-1-22-1-0 --group S-1-22-2-0
+ * Usage: flxsmb.cli.LookupAccountInfoCommand //hostname/share -u domain/username -p password --user S-1-22-1-0 --group S-1-22-2-0
  *
  * Result:
  *
@@ -20,14 +20,14 @@ import java.util.logging.Logger;
  *      gid: S-1-22-2-0
  *      grpname: Administrators
  */
-public class LookupSidsCommand extends BaseCommand
+public class LookupAccountInfoCommand extends BaseCommand
 {
-    private static final Logger _logger = Logger.getLogger(LookupSidsCommand.class.getName());
+    private static final Logger _logger = Logger.getLogger(LookupAccountInfoCommand.class.getName());
 
     protected SID user;
     protected SID group;
 
-    public LookupSidsCommand()
+    public LookupAccountInfoCommand()
     {
         _filepathRequired = false;
     }
@@ -38,7 +38,7 @@ public class LookupSidsCommand extends BaseCommand
      */
     public static void main(String[] args)
     {
-        LookupSidsCommand command = new LookupSidsCommand();
+        LookupAccountInfoCommand command = new LookupAccountInfoCommand();
 
         try
         {
