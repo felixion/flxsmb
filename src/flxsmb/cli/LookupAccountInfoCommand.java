@@ -5,13 +5,17 @@ import jcifs.smb.SID;
 import jcifs.smb.SmbException;
 import jcifs.smb.SmbFile;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
  * CLI command for looking up account information associated with a SID.
  *
- * Usage: flxsmb.cli.LookupAccountInfoCommand //hostname/share -u domain/username -p password --user S-1-22-1-0 --group S-1-22-2-0
+ * Usage: flxsmb.cli.LookupAccountInfoCommand //hostname/share -u domain/username -p password
+ *                                            --sid S-1-22-1-0
+ *                                            --account-name storediq/testadmin
  *
  * Result:
  *
@@ -24,8 +28,9 @@ public class LookupAccountInfoCommand extends BaseCommand
 {
     private static final Logger _logger = Logger.getLogger(LookupAccountInfoCommand.class.getName());
 
-    protected SID user;
-    protected SID group;
+    protected List<SID> sidList = new ArrayList<SID>();
+
+    protected List<String> accountList = new ArrayList<String>();
 
     public LookupAccountInfoCommand()
     {
@@ -63,13 +68,34 @@ public class LookupAccountInfoCommand extends BaseCommand
         NtlmPasswordAuthentication auth = new NtlmPasswordAuthentication(domain, username, password);
         SmbFile file = new SmbFile(url, auth);
 
-        if (user != null)
-            user.resolve(hostname, auth);
+        for (SID sid : sidList)
+        {
+            sid.resolve(hostname, new NtlmPasswordAuthentication(domain, username, password));
+//            System.out.println("SID: " + sid + " " + sid.toDisplayString());
+            printSID(sid);
+        }
 
-        if (group != null)
-            group.resolve(hostname, auth);
+        String[] accountNames = new String[accountList.size()];
+        for (int i = 0; i < accountNames.length; i++) accountNames[i] = accountList.get(i);
 
-        System.out.println(String.format("user: %s grp: %s", user.toDisplayString(), group.toDisplayString()));
+        SID[] sids = SID.getFromNames(hostname, new NtlmPasswordAuthentication(domain, username, password), accountNames);
+
+        for (SID sid : sids)
+        {
+            printSID(sid);
+        }
+    }
+
+    protected static void printSID(SID sid)
+    {
+        int rid = sid.getRid();
+        int type = sid.getType();
+        String accountName = sid.getAccountName();
+        String domainName = sid.getDomainName();
+        SID domainSid = sid.getDomainSid();
+
+        System.out.println(String.format("SID [domain: %s account: %s] %s\n\ttype: %s domainSID: %s rid: %s",
+                domainName, accountName, sid, type, domainSid, rid));
     }
 
     @Override
@@ -84,14 +110,14 @@ public class LookupAccountInfoCommand extends BaseCommand
                 boolean hasAnother = i < args.length - 1;
 
                 String flag = args[i].toUpperCase();
-                if (flag.equals("--USER") && hasAnother)
+                if (flag.equals("--ACCOUNT-NAME") && hasAnother)
                 {
-                    user = new SID(args[i + 1]);
+                    accountList.add(args[i + 1]);
                 }
 
-                else if (flag.equals("--GROUP") && hasAnother)
+                else if (flag.equals("--SID") && hasAnother)
                 {
-                    group = new SID(args[i + 1]);
+                    sidList.add(new SID(args[i + 1]));
                 }
 
             }
