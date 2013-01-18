@@ -3142,7 +3142,7 @@ if (this instanceof SmbNamedPipe) {
     {
         int f;
 
-        f = open0(O_RDWR, WRITE_OWNER, 0, isDirectory() ? 1 : 0);
+        f = open0(O_RDWR | O_EXCL, WRITE_DAC | WRITE_OWNER, 0, isDirectory() ? 1 : 0x4000);
 
         /*
          * NtTrans Update Security Desc Request / Response
