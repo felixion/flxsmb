@@ -29,7 +29,7 @@ public class SetOwnerSidsTest extends SmbTestCase
 
 //        file1.createNewFile();
         SID newUser = new SID("S-1-5-21-640782154-1059231025-666483966-1005");
-`
+
         file1.setOwner(newUser);
     }
 }
