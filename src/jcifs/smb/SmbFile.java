@@ -351,7 +351,7 @@ public class SmbFile extends URLConnection implements SmbConstants {
     static final int ATTR_GET_MASK = 0x7FFF; /* orig 0x7fff */
     static final int ATTR_SET_MASK = 0x30A7; /* orig 0x0027 */
 
-    static final int DEFAULT_ATTR_EXPIRATION_PERIOD = 5000;
+    static final int DEFAULT_ATTR_EXPIRATION_PERIOD = 30000; // orig 5000;
 
     static final int HASH_DOT     = ".".hashCode();
     static final int HASH_DOT_DOT = "..".hashCode();
@@ -414,6 +414,7 @@ public class SmbFile extends URLConnection implements SmbConstants {
     private long createTime;
     private long lastModified;
     private long lastAccessed;
+    private long changeTime;
     private int attributes;
     private long attrExpiration;
     private long size;
@@ -649,6 +650,10 @@ public class SmbFile extends URLConnection implements SmbConstants {
         this.type = type;
         this.attributes = attributes;
         this.createTime = createTime;
+
+        // need to change constructor to get this... need to look at implications of that
+        this.changeTime = changeTime;
+
         this.lastModified = lastModified;
         this.lastAccessed = lastAccessed;
         this.size = size;
@@ -668,106 +673,110 @@ public class SmbFile extends URLConnection implements SmbConstants {
         if (request instanceof SmbComClose)
             return;
 
-        connect0();
+        if (request != null)
+            request.flags2 &= ~ServerMessageBlock.FLAGS2_RESOLVE_PATHS_IN_DFS;
+        return;
 
-        DfsReferral dr = dfs.resolve(
-                    tree.session.transport.tconHostName,
-                    tree.share,
-                    unc,
-                    auth);
-        if (dr != null) {
-            String service = null;
+//         connect0();
 
-            if (request != null) {
-                switch( request.command ) {
-                    case ServerMessageBlock.SMB_COM_TRANSACTION:
-                    case ServerMessageBlock.SMB_COM_TRANSACTION2:
-                        switch( ((SmbComTransaction)request).subCommand & 0xFF ) {
-                            case SmbComTransaction.TRANS2_GET_DFS_REFERRAL:
-                                break;
-                            default:
-                                service = "A:";
-                        }
-                        break;
-                    default:
-                        service = "A:";
-                }
-            }
+//         DfsReferral dr = dfs.resolve(
+//                     tree.session.transport.tconHostName,
+//                     tree.share,
+//                     unc,
+//                     auth);
+//         if (dr != null) {
+//             String service = null;
 
-            DfsReferral start = dr;
-            SmbException se = null;
+//             if (request != null) {
+//                 switch( request.command ) {
+//                     case ServerMessageBlock.SMB_COM_TRANSACTION:
+//                     case ServerMessageBlock.SMB_COM_TRANSACTION2:
+//                         switch( ((SmbComTransaction)request).subCommand & 0xFF ) {
+//                             case SmbComTransaction.TRANS2_GET_DFS_REFERRAL:
+//                                 break;
+//                             default:
+//                                 service = "A:";
+//                         }
+//                         break;
+//                     default:
+//                         service = "A:";
+//                 }
+//             }
 
-            do {
-                try {
-                    if (log.level >= 2)
-                        log.println("DFS redirect: " + dr);
+//             DfsReferral start = dr;
+//             SmbException se = null;
 
-                    UniAddress addr = UniAddress.getByName(dr.server);
-                    SmbTransport trans = SmbTransport.getSmbTransport(addr, url.getPort());
-                    /* This is a key point. This is where we set the "tree" of this file which
-                     * is like changing the rug out from underneath our feet.
-                     */
-/* Technically we should also try to authenticate here but that means doing the session setup and tree connect separately. For now a simple connect will at least tell us if the host is alive. That should be sufficient for 99% of the cases. We can revisit this again for 2.0.
- */
-                    trans.connect();
-                    tree = trans.getSmbSession( auth ).getSmbTree( dr.share, service );
+//             do {
+//                 try {
+//                     if (log.level >= 2)
+//                         log.println("DFS redirect: " + dr);
 
-                    if (dr != start && dr.key != null) {
-                        dr.map.put(dr.key, dr);
-                    }
+//                     UniAddress addr = UniAddress.getByName(dr.server);
+//                     SmbTransport trans = SmbTransport.getSmbTransport(addr, url.getPort());
+//                     /* This is a key point. This is where we set the "tree" of this file which
+//                      * is like changing the rug out from underneath our feet.
+//                      */
+// /* Technically we should also try to authenticate here but that means doing the session setup and tree connect separately. For now a simple connect will at least tell us if the host is alive. That should be sufficient for 99% of the cases. We can revisit this again for 2.0.
+//  */
+//                     trans.connect();
+//                     tree = trans.getSmbSession( auth ).getSmbTree( dr.share, service );
 
-                    se = null;
+//                     if (dr != start && dr.key != null) {
+//                         dr.map.put(dr.key, dr);
+//                     }
 
-                    break;
-                } catch (IOException ioe) {
-                    if (ioe instanceof SmbException) {
-                        se = (SmbException)ioe;
-                    } else {
-                        se = new SmbException(dr.server, ioe);
-                    }
-                }
+//                     se = null;
 
-                dr = dr.next;
-            } while (dr != start);
+//                     break;
+//                 } catch (IOException ioe) {
+//                     if (ioe instanceof SmbException) {
+//                         se = (SmbException)ioe;
+//                     } else {
+//                         se = new SmbException(dr.server, ioe);
+//                     }
+//                 }
 
-            if (se != null)
-                throw se;
+//                 dr = dr.next;
+//             } while (dr != start);
 
-            if (log.level >= 3)
-                log.println( dr );
+//             if (se != null)
+//                 throw se;
 
-            dfsReferral = dr;
-            if (dr.pathConsumed < 0) {
-                dr.pathConsumed = 0;
-            } else if (dr.pathConsumed > unc.length()) {
-                dr.pathConsumed = unc.length();
-            }
-            String dunc = unc.substring(dr.pathConsumed);
-            if (dunc.equals(""))
-                dunc = "\\";
-            if (!dr.path.equals(""))
-                dunc = "\\" + dr.path + dunc;
+//             if (log.level >= 3)
+//                 log.println( dr );
 
-            unc = dunc;
-            if (request != null &&
-                        request.path != null &&
-                        request.path.endsWith("\\") &&
-                        dunc.endsWith("\\") == false) {
-                dunc += "\\";
-            }
-            if (request != null) {
-                request.path = dunc;
-                request.flags2 |= ServerMessageBlock.FLAGS2_RESOLVE_PATHS_IN_DFS;
-            }
-        } else if (tree.inDomainDfs &&
-                        !(request instanceof NtTransQuerySecurityDesc) &&
-                        !(request instanceof SmbComClose) &&
-                        !(request instanceof SmbComFindClose2)) {
-            throw new SmbException(NtStatus.NT_STATUS_NOT_FOUND, false);
-        } else {
-            if (request != null)
-                request.flags2 &= ~ServerMessageBlock.FLAGS2_RESOLVE_PATHS_IN_DFS;
-        }
+//             dfsReferral = dr;
+//             if (dr.pathConsumed < 0) {
+//                 dr.pathConsumed = 0;
+//             } else if (dr.pathConsumed > unc.length()) {
+//                 dr.pathConsumed = unc.length();
+//             }
+//             String dunc = unc.substring(dr.pathConsumed);
+//             if (dunc.equals(""))
+//                 dunc = "\\";
+//             if (!dr.path.equals(""))
+//                 dunc = "\\" + dr.path + dunc;
+
+//             unc = dunc;
+//             if (request != null &&
+//                         request.path != null &&
+//                         request.path.endsWith("\\") &&
+//                         dunc.endsWith("\\") == false) {
+//                 dunc += "\\";
+//             }
+//             if (request != null) {
+//                 request.path = dunc;
+//                 request.flags2 |= ServerMessageBlock.FLAGS2_RESOLVE_PATHS_IN_DFS;
+//             }
+//         } else if (tree.inDomainDfs &&
+//                         !(request instanceof NtTransQuerySecurityDesc) &&
+//                         !(request instanceof SmbComClose) &&
+//                         !(request instanceof SmbComFindClose2)) {
+//             throw new SmbException(NtStatus.NT_STATUS_NOT_FOUND, false);
+//         } else {
+//             if (request != null)
+//                 request.flags2 &= ~ServerMessageBlock.FLAGS2_RESOLVE_PATHS_IN_DFS;
+//         }
     }
     void send( ServerMessageBlock request,
                     ServerMessageBlock response ) throws SmbException {
@@ -982,12 +991,12 @@ int addressIndex;
 
         if( tree.session.transport.hasCapability( ServerMessageBlock.CAP_NT_SMBS )) {
             SmbComNTCreateAndXResponse response = new SmbComNTCreateAndXResponse();
-SmbComNTCreateAndX request = new SmbComNTCreateAndX( unc, flags, access, shareAccess, attrs, options, null );
-if (this instanceof SmbNamedPipe) {
-    request.flags0 |= 0x16;
-    request.desiredAccess |= 0x20000;
-    response.isExtended = true;
-}
+            SmbComNTCreateAndX request = new SmbComNTCreateAndX( unc, flags, access, shareAccess, attrs, options, null );
+            if (this instanceof SmbNamedPipe) {
+                request.flags0 |= 0x16;
+                request.desiredAccess |= 0x20000;
+                response.isExtended = true;
+            }
             send( request, response );
             f = response.fid;
             attributes = response.extFileAttributes & ATTR_GET_MASK;
@@ -1400,8 +1409,10 @@ if (this instanceof SmbNamedPipe) {
         }
 
         attributes = ATTR_READONLY | ATTR_DIRECTORY;
+        changeTime = 0L;
         createTime = 0L;
         lastModified = 0L;
+        lastAccessed = 0L;
         isExists = false;
 
         try {
@@ -1417,11 +1428,14 @@ if (this instanceof SmbNamedPipe) {
                 connect0(); // treeConnect is good enough
             } else {
                 Info info = queryPath( getUncPath0(),
-                    Trans2QueryPathInformationResponse.SMB_QUERY_FILE_BASIC_INFO );
+                    Trans2QueryPathInformationResponse.SMB_QUERY_FILE_ALL_INFO );
                 attributes = info.getAttributes();
                 createTime = info.getCreateTime();
+                changeTime = info.getChangeTime();
                 lastModified = info.getLastWriteTime();
                 lastAccessed = info.getLastAccessTime();
+                size = info.getSize();
+                sizeExpiration = System.currentTimeMillis() + attrExpirationPeriod;
             }
 
             /* If any of the above fail, isExists will not be set true
@@ -1567,6 +1581,16 @@ if (this instanceof SmbNamedPipe) {
         }
         return 0L;
     }
+
+    public long changeTime() throws SmbException {
+        if( getUncPath0().length() > 1 ) {
+            exists();
+            return changeTime;
+        }
+        return 0L;
+    }
+
+
 /**
  * Retrieve the last time the file represented by this
  * <code>SmbFile</code> was modified. The value returned is suitable for
@@ -2459,7 +2483,7 @@ if (this instanceof SmbNamedPipe) {
  */
 
     public long length() throws SmbException {
-        if( sizeExpiration > System.currentTimeMillis() ) {
+        if( attrExpiration > System.currentTimeMillis() ) {
             return size;
         }
 
@@ -2473,7 +2497,14 @@ if (this instanceof SmbNamedPipe) {
             size = response.info.getCapacity();
         } else if( getUncPath0().length() > 1 && type != TYPE_NAMED_PIPE ) {
             Info info = queryPath( getUncPath0(),
-                    Trans2QueryPathInformationResponse.SMB_QUERY_FILE_STANDARD_INFO );
+                    Trans2QueryPathInformationResponse.SMB_QUERY_FILE_ALL_INFO );
+            attributes = info.getAttributes();
+            createTime = info.getCreateTime();
+            changeTime = info.getChangeTime();
+            lastModified = info.getLastWriteTime();
+            lastAccessed = info.getLastAccessTime();
+            attrExpiration = System.currentTimeMillis() + attrExpirationPeriod;
+
             size = info.getSize();
         } else {
             size = 0L;

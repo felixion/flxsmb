@@ -48,6 +48,10 @@ class SmbComQueryInformationResponse extends ServerMessageBlock implements Info 
         Logger.getAnonymousLogger().warning("SmbComQueryInformationResponse.getLastAccessTime not implemented");
         return 0;
     }
+    public long getChangeTime() {
+        Logger.getAnonymousLogger().warning("SmbComQueryInformationResponse.getChangeTime not implemented");
+        return 0;
+    }
     public long getSize() {
         return fileSize;
     }

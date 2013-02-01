@@ -56,7 +56,8 @@ dependencies: Checks that all class dependencies are met.
             source="1.5"
             target="1.5"
             fork="yes"
-            debug="on">
+            <!-- debug="on" -->
+            <!-- debugLevel="lines,vars,source"> -->
             <classpath refid="classpath"></classpath>
         </javac>
     </target>
