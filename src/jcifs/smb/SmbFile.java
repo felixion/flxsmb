@@ -1010,7 +1010,7 @@ int addressIndex;
 
         return f;
     }
-    void open( int flags, int access, int attrs, int options ) throws SmbException {
+    public void open( int flags, int access, int attrs, int options ) throws SmbException {
         if( isOpen() ) {
             return;
         }
@@ -1018,7 +1018,7 @@ int addressIndex;
         opened = true;
         tree_num = tree.tree_num;
     }
-    boolean isOpen() {
+    public boolean isOpen() {
         boolean ans = opened && isConnected() && tree_num == tree.tree_num;
         return ans;
     }
@@ -1040,7 +1040,7 @@ int addressIndex;
         close( fid, lastWriteTime );
         opened = false;
     }
-    void close() throws SmbException {
+    public void close() throws SmbException {
         close( 0L );
     }
 
