@@ -3190,4 +3190,9 @@ int addressIndex;
 
         return response.errorCode;
     }
+
+    public void expireCachedAttributes()
+    {
+        attrExpiration = 0;
+    }
 }
