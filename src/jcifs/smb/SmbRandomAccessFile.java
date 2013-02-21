@@ -55,8 +55,21 @@ public class SmbRandomAccessFile implements DataOutput, DataInput {
             throw new IllegalArgumentException( "Invalid mode" );
         }
         file.open( openFlags, access, SmbFile.ATTR_NORMAL, options );
-        readSize = file.tree.session.transport.rcv_buf_size - 70;
-        writeSize = file.tree.session.transport.snd_buf_size - 70;
+
+        boolean isSigningEnabled = (file.tree.session.transport.flags2 & ServerMessageBlock.FLAGS2_SECURITY_SIGNATURES) == ServerMessageBlock.FLAGS2_SECURITY_SIGNATURES;
+
+      if(!isSigningEnabled && (file.tree.session.transport.server.capabilities & SmbConstants.CAP_LARGE_READX) == SmbConstants.CAP_LARGE_READX) {
+            readSize = Math.min(SmbConstants.RCV_BUF_SIZE - 70, 0xFFFF -70);
+        } else {
+            readSize = file.tree.session.transport.rcv_buf_size - 70;
+        }
+        
+        if(!isSigningEnabled && (file.tree.session.transport.server.capabilities & SmbConstants.CAP_LARGE_WRITEX) == SmbConstants.CAP_LARGE_WRITEX) {
+            writeSize = Math.min(SmbConstants.SND_BUF_SIZE - 70, 0xFFFF - 70);
+        } else {
+            writeSize = Math.min( file.tree.session.transport.snd_buf_size - 70,
+                                  file.tree.session.transport.server.maxBufferSize - 70 );
+        }
         fp = 0L;
     }
 

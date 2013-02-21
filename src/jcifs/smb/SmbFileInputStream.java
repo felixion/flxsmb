@@ -34,7 +34,7 @@ import jcifs.util.transport.TransportException;
 public class SmbFileInputStream extends InputStream {
 
     private long fp;
-    private int readSize, openFlags, access;
+    private int readSize, readSizeFile, openFlags, access;
     private byte[] tmp = new byte[1];
 
     SmbFile file;
@@ -75,8 +75,14 @@ public class SmbFileInputStream extends InputStream {
         } else {
             file.connect0();
         }
+        boolean isSigningEnabled = (file.tree.session.transport.flags2 & ServerMessageBlock.FLAGS2_SECURITY_SIGNATURES) == ServerMessageBlock.FLAGS2_SECURITY_SIGNATURES;
         readSize = Math.min( file.tree.session.transport.rcv_buf_size - 70,
                             file.tree.session.transport.server.maxBufferSize - 70 );
+        if(!isSigningEnabled && (file.tree.session.transport.server.capabilities & SmbConstants.CAP_LARGE_READX) == SmbConstants.CAP_LARGE_READX) {
+            readSizeFile = Math.min(SmbConstants.RCV_BUF_SIZE - 70, 0xFFFF - 70);
+        } else {
+            readSizeFile = readSize;
+        }
     }
 
     protected IOException seToIoe(SmbException se) {
@@ -168,7 +174,8 @@ public class SmbFileInputStream extends InputStream {
 
         int r, n;
         do {
-            r = len > readSize ? readSize : len;
+            int blockSize = (file.getType() == SmbFile.TYPE_FILESYSTEM) ? readSizeFile : readSize;
+            r = len > blockSize ? blockSize : len;
 
             if( file.log.level >= 4 )
                 file.log.println( "read: len=" + len + ",r=" + r + ",fp=" + fp );

@@ -33,7 +33,7 @@ public class SmbFileOutputStream extends OutputStream {
 
     private SmbFile file;
     private boolean append, useNTSmbs;
-    private int openFlags, access, writeSize;
+    private int openFlags, writeSizeFile, access, writeSize;
     private long fp;
     private byte[] tmp = new byte[1];
     private SmbComWriteAndX reqx;
@@ -142,6 +142,12 @@ write, and/or delete the file while the jCIFS user has the file open.
         file.open( openFlags, access | SmbConstants.FILE_WRITE_DATA, SmbFile.ATTR_NORMAL, 0 );
         this.openFlags &= ~(SmbFile.O_CREAT | SmbFile.O_TRUNC); /* in case close and reopen */
         writeSize = file.tree.session.transport.snd_buf_size - 70;
+        boolean isSigningEnabled = (file.tree.session.transport.flags2 & ServerMessageBlock.FLAGS2_SECURITY_SIGNATURES) == ServerMessageBlock.FLAGS2_SECURITY_SIGNATURES;
+        if(!isSigningEnabled && (file.tree.session.transport.server.capabilities & SmbConstants.CAP_LARGE_WRITEX) == SmbConstants.CAP_LARGE_WRITEX) {
+            writeSizeFile = Math.min(SmbConstants.RCV_BUF_SIZE - 70, 0xFFFF - 70);
+        } else {
+            writeSizeFile = writeSize;
+        }
 
         useNTSmbs = file.tree.session.transport.hasCapability( ServerMessageBlock.CAP_NT_SMBS );
         if( useNTSmbs ) {
@@ -233,15 +239,17 @@ write, and/or delete the file while the jCIFS user has the file open.
 
         int w;
         do {
-            w = len > writeSize ? writeSize : len;
+            int blockSize = (file.getType() == SmbFile.TYPE_FILESYSTEM) ? writeSizeFile : writeSize;
+            w = len > blockSize ? blockSize : len;
+
             if( useNTSmbs ) {
                 reqx.setParam( file.fid, fp, len - w, b, off, w );
-if ((flags & 1) != 0) {
-    reqx.setParam( file.fid, fp, len, b, off, w );
-    reqx.writeMode = 0x8;
-} else {
-    reqx.writeMode = 0;
-}
+            if ((flags & 1) != 0) {
+                reqx.setParam( file.fid, fp, len, b, off, w );
+                reqx.writeMode = 0x8;
+            } else {
+                reqx.writeMode = 0;
+            }
                 file.send( reqx, rspx );
                 fp += rspx.count;
                 len -= rspx.count;
