@@ -910,7 +910,8 @@ int addressIndex;
         }
 
         String hostName = getServerWithDfs();
-        tree.inDomainDfs = dfs.resolve(hostName, tree.share, null, auth) != null;
+        // tree.inDomainDfs = dfs.resolve(hostName, tree.share, null, auth) != null;
+        tree.inDomainDfs = false;
         if (tree.inDomainDfs) {
             tree.connectionState = 2;
         }
@@ -933,7 +934,8 @@ int addressIndex;
                 auth = a;
                 ssn = trans.getSmbSession(auth);
                 tree = ssn.getSmbTree(share, null);
-                tree.inDomainDfs = dfs.resolve(hostName, tree.share, null, auth) != null;
+                // tree.inDomainDfs = dfs.resolve(hostName, tree.share, null, auth) != null;
+                tree.inDomainDfs = false;
                 if (tree.inDomainDfs) {
                     tree.connectionState = 2;
                 }
