@@ -2105,7 +2105,14 @@ int addressIndex;
         resolveDfs(null);
         dest.resolveDfs(null);
 
-        if (!tree.equals(dest.tree)) {
+        /*
+         * This check is to determine whether we are renaming a file to a
+         * destination path that's not in the current session.  We're modifying
+         * it to ignore the case when the destination file has no session,
+         * because if you skip DFS resolution (previous step) the session
+         * won't be established.
+         */
+        if (!tree.equals(dest.tree) && dest.tree != null) {
             throw new SmbException( "Invalid operation for workgroups, servers, or shares" );
         }
 
