@@ -2668,7 +2668,7 @@ int addressIndex;
     }
     
     f = open0( O_RDONLY, FILE_WRITE_ATTRIBUTES,
-    dir, dir != 0 ? 0x0001 : 0x0040 );
+    dir & ATTR_DIRECTORY, (dir & ATTR_DIRECTORY) != 0 ? 0x0001 : 0x0040 );
     send( new Trans2SetFileInformation( f, attrs | dir, ctime, atime, mtime ),
     new Trans2SetFileInformationResponse() );
     close( f, 0L );
