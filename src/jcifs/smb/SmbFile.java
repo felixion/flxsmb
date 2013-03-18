@@ -415,7 +415,7 @@ public class SmbFile extends URLConnection implements SmbConstants {
     private long lastModified;
     private long lastAccessed;
     private long changeTime;
-    private int attributes;
+    private int attributes = 0;
     private long attrExpiration;
     private long size;
     private long sizeExpiration;
@@ -2627,8 +2627,16 @@ int addressIndex;
         int f, dir;
 
         exists();
-        dir = attributes & ATTR_DIRECTORY;
-
+        if (attrs == 0)
+        {
+            // not setting attributes.. so default it to what we currently have
+            dir = attributes;
+        }
+        else
+        {
+            dir = attributes & ATTR_DIRECTORY;
+        }
+    
         f = open0( O_RDONLY, FILE_WRITE_ATTRIBUTES,
                 dir, dir != 0 ? 0x0001 : 0x0040 );
         send( new Trans2SetFileInformation( f, attrs | dir, ctime, mtime ),
@@ -2642,8 +2650,16 @@ int addressIndex;
     int f, dir;
 
     exists();
-    dir = attributes & ATTR_DIRECTORY;
-
+    if (attrs == 0)
+    {
+        // not setting attributes.. so default it to what we currently have
+        dir = attributes;
+    }
+    else
+    {
+        dir = attributes & ATTR_DIRECTORY;
+    }
+    
     f = open0( O_RDONLY, FILE_WRITE_ATTRIBUTES,
     dir, dir != 0 ? 0x0001 : 0x0040 );
     send( new Trans2SetFileInformation( f, attrs | dir, ctime, atime, mtime ),
@@ -2652,6 +2668,15 @@ int addressIndex;
 
     attrExpiration = 0;
     }
+
+
+public void setTimes( long ctime, long atime, long mtime ) throws SmbException {
+    if( getUncPath0().length() == 1 ) {
+        throw new SmbException( "Invalid operation for workgroups, servers, or shares" );
+    }
+
+    setPathInformation( 0, ctime, atime, mtime );
+}
 
 
 /**
