@@ -1,5 +1,7 @@
 package jcifs.dcerpc.msrpc;
 
+import java.nio.charset.Charset;
+
 import jcifs.dcerpc.*;
 import jcifs.dcerpc.ndr.*;
 
@@ -847,6 +849,93 @@ public class lsarpc {
             count = (int)_src.dec_ndr_long();
             retval = (int)_src.dec_ndr_long();
         }
+    }
+    public static class LsarLookupNames extends DcerpcMessage {
+   protected static final Charset csULU   = Charset.forName("UnicodeLittleUnmarked");
+
+   public int getOpnum() { return 0x0e; }
+
+   public int retval;
+   public rpc.policy_handle handle;
+   public String names[];
+   public LsarRefDomainList domains;
+   public LsarTransSidArray sids;
+   public short level;
+   public int count;
+
+   public LsarLookupNames(
+       rpc.policy_handle handle,
+       String names[],
+       short level,
+       int count
+   ) {
+       this.handle = handle;
+       this.names = names;
+       this.level = level;
+       this.count = count;
+   }
+
+   public void encode_in(NdrBuffer _dst) throws NdrException {
+       handle.encode(_dst);
+
+       _dst.align(4);
+
+       _dst.enc_ndr_long(names.length);
+       _dst.enc_ndr_long(names.length);
+
+       for(int i = 0; i < names.length; ++i) {
+       int wlen = 2 * names[i].length();
+
+       _dst.enc_ndr_short(wlen);
+       _dst.enc_ndr_short(wlen);
+       _dst.enc_ndr_long(1);
+       }
+
+       // Encode names
+       for(int i = 0; i < names.length; ++i) {
+       String name = names[i];
+       int len = name.length();
+
+       _dst.enc_ndr_long(len);
+       _dst.enc_ndr_long(0);
+       _dst.enc_ndr_long(len);
+
+       System.arraycopy(
+           name.getBytes(csULU), 0,
+           _dst.buf, _dst.index,
+           2 * len
+       );
+       _dst.advance(2 * len);
+
+       _dst.align(4);
+       }
+
+       _dst.enc_ndr_long(0);   // num_trans_entries
+       _dst.enc_ndr_long(0);   // ptr_trans_sids
+
+       _dst.enc_ndr_short(level);  // lookup_level
+       _dst.align(4);
+
+       _dst.enc_ndr_long(count);   // mapped_count
+   }
+
+   public void decode_out(NdrBuffer _src) throws NdrException {
+            _src.align(4);
+
+       int _domainsp = _src.dec_ndr_long();
+       if(_domainsp != 0) {
+       if(domains == null) /* YOYOYO */
+           domains = new LsarRefDomainList();
+       domains.decode(_src);
+       }
+
+       if(sids == null)
+       sids = new LsarTransSidArray();
+       sids.decode(_src);
+
+       count = (int)_src.dec_ndr_long();
+       retval = (int)_src.dec_ndr_long();
+   }
     }
     public static class LsarOpenPolicy2 extends DcerpcMessage {
 

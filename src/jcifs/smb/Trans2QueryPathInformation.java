@@ -30,8 +30,8 @@ class Trans2QueryPathInformation extends SmbComTransaction {
         command = SMB_COM_TRANSACTION2;
         subCommand = TRANS2_QUERY_PATH_INFORMATION;
         totalDataCount = 0;
-        maxParameterCount = 2;
-        maxDataCount = 40;
+        maxParameterCount = 10; //2;
+        maxDataCount = 16644; //40;
         maxSetupCount = (byte)0x00;
     }
 

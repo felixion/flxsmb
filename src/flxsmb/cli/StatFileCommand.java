@@ -64,7 +64,7 @@ public class StatFileCommand extends BaseCommand
         int size = file.getContentLength();
 
         Date mtime = new Date(file.lastModified());
-        Date ctime = new Date(file.getDate());
+        Date ctime = new Date(file.createTime());
         Date atime = new Date(file.lastAccessed());
 
         String path = file.getCanonicalPath();

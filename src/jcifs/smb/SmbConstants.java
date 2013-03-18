@@ -12,8 +12,8 @@ interface SmbConstants {
     static final int DEFAULT_MAX_MPX_COUNT = 10;
     static final int DEFAULT_RESPONSE_TIMEOUT = 30000;
     static final int DEFAULT_SO_TIMEOUT = 35000;
-    static final int DEFAULT_RCV_BUF_SIZE = 60416;
-    static final int DEFAULT_SND_BUF_SIZE = 16644;
+   static final int DEFAULT_RCV_BUF_SIZE = 0xFFFF;
+   static final int DEFAULT_SND_BUF_SIZE = 0xFFFF;
     static final int DEFAULT_SSN_LIMIT = 250;
     static final int DEFAULT_CONN_TIMEOUT = 35000;
 
@@ -63,6 +63,8 @@ interface SmbConstants {
     static final int CAP_LOCK_AND_READ    = 0x0100;
     static final int CAP_NT_FIND          = 0x0200;
     static final int CAP_DFS              = 0x1000;
+   static final int CAP_LARGE_READX = 0x4000;
+   static final int CAP_LARGE_WRITEX = 0x8000;
     static final int CAP_EXTENDED_SECURITY = 0x80000000;
 
     // file attribute encoding

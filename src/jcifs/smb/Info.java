@@ -23,5 +23,6 @@ interface Info {
     long getCreateTime();
     long getLastWriteTime();
     long getLastAccessTime();
+    long getChangeTime();
     long getSize();
 }

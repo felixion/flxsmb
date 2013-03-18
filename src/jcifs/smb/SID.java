@@ -721,5 +721,201 @@ synchronized (sid_cache) {
         }
 }
     }
+
+    /**
+     * <p>This function maps the array of domain object names <b>names</b> to their
+     * equivalent <b>SID</b>s.</p>
+     *
+     * <p>Note that the LsaPolicyHandle passed to this function must be created at least
+     * with access 0x00000800 (POLICY_LOOKUP_NAMES), otherwise it will throw an
+     * IOException.</p>
+     *
+     * <p>On success, the returned <b>SID</b>s are named according the content of the
+     * <b>names</b> array. Thereby, the case of their <b>acctName</b> fields may
+     * be incorrect since names are mapped ignoring their case. If you want to
+     * obtain the <b>acctName</b> exactly as it is stored in the server, you need
+     * to issue a <b>resolve()</b> call on the <b>SID</b>, or use one of the
+     * various <b>resolveSids()</b> variants. However, the domain part of the names
+     * is always correct, since the server communicates it in its response.</p>
+     *
+     * <p>Also note that any unresolved name will map to a null value in the related
+     * entry in the returned SIDs array. No exception will be thrown.</p>
+     *
+     * @param handle The <b>DcerpcHandle</b> object to use to communicate with the
+     * LSA service
+     * @param policyHandle The <b>LsaPolicyHandle</b> to use in order to get
+     *  authorized by the LSA service.
+     * @param names An array of strings containing the domain's object names to map.
+     * @return An array of <b>SID</b>s one-to-one related with the given <b>names</b>.
+     * @throws IOException if anything goes wrong
+     * @author Giampaolo Tomassoni &lt;giampaolo at tomassoni dot biz&gt;
+     */
+    public static SID[] getFromNames(
+   DcerpcHandle handle,
+   LsaPolicyHandle policyHandle,
+   String names[]
+    ) throws IOException {
+   SID outputSids[] = new SID[names.length];
+   if(names.length > 0) {
+       MsrpcLookupNames rpc = new MsrpcLookupNames(policyHandle, names);
+       handle.sendrecv(rpc);
+       switch (rpc.retval) {
+       case 0:
+       case NtStatus.NT_STATUS_NONE_MAPPED:
+       case 0x00000107: // NT_STATUS_SOME_NOT_MAPPED
+       break;
+
+       default:
+       throw new SmbException(rpc.retval, false);
+       }
+
+       SID domainSids[] = new SID[rpc.domains.count];
+       for(int i = 0; i < domainSids.length; ++i) {
+       SID domainSid = new SID(
+           rpc.domains.domains[i].sid,
+           SID_TYPE_DOMAIN,
+           (new UnicodeString(rpc.domains.domains[i].name, false)).toString(),
+           null,
+           false
+       );
+
+       domainSids[i] = domainSid;
+       }
+
+       for(int i = 0; i < rpc.sids.count; ++i) {
+       SID sid;
+       switch(rpc.sids.sids[i].sid_type) {
+       case SID_TYPE_DOMAIN:
+           sid = domainSids[rpc.sids.sids[i].sid_index];
+           break;
+
+       case SID_TYPE_INVALID:
+       case SID_TYPE_UNKNOWN:
+           // Probably the result of an attempt to resolve an
+           // not existent or bad name
+           sid = null;
+           break;
+
+       default:
+           SID domainSid = domainSids[rpc.sids.sids[i].sid_index];
+           sid = new SID(domainSid, rpc.sids.sids[i].rid);
+           sid.type = rpc.sids.sids[i].sid_type;
+           sid.domainName = domainSid.domainName;
+
+           // If the specified name includes domain data, this must be
+           // removed from acctName.
+           sid.acctName = names[i].substring(names[i].indexOf('\\') + 1);
+       }
+
+       outputSids[i] = sid;
+       }
+   }
+
+   return(outputSids);
+    }
+
+    /**
+     * <p>This function maps the array of domain object names <b>names</b> to their
+     * equivalent <b>SID</b>s.</p>
+     *
+     * <p>On success, the returned <b>SID</b>s are named according the content of the
+     * <b>names</b> array. Thereby, the case of their <b>acctName</b> fields may
+     * be incorrect since names are mapped ignoring their case. If you want to
+     * obtain the <b>acctName</b> exactly as it is stored in the server, you need
+     * to issue a <b>resolve()</b> call on the <b>SID</b>, or use one of the
+     * various <b>resolveSids()</b> variants. However, the domain part of the names
+     * is always correct, since the server communicates it in its response.</p> 
+     *
+     * <p>Also note that any unresolved name will map to a null value in the related
+     * entry in the returned SIDs array. No exception will be thrown.</p>
+     * 
+     * @param authorityServerName The name or address of the authority server to
+     * contact to resolve the names.
+     * @param auth The <b>NtlmPasswordAuthentication</b> to use in order to get
+     *  authorized by the server.
+     * @param names An array of strings containing the domain's object names to map.
+     * @return An array of <b>SID</b>s one-to-one related with the given <b>names</b>.
+     * @throws IOException if anything goes wrong
+     * @author Giampaolo Tomassoni &lt;giampaolo at tomassoni dot biz&gt;
+     */
+    public static SID[] getFromNames(
+   String authorityServerName,
+   NtlmPasswordAuthentication auth,
+   String names[]
+    ) throws IOException {
+   DcerpcHandle handle = DcerpcHandle.getHandle(
+       "ncacn_np:" + authorityServerName + "[\\PIPE\\lsarpc]",
+       auth
+   );
+   try {
+       int dot = authorityServerName.indexOf('.');
+
+       String serverName;
+       if(dot > 0 && !Character.isDigit(authorityServerName.charAt(0)))
+       serverName = authorityServerName.substring(0, dot);
+       else
+       serverName = authorityServerName;
+
+       LsaPolicyHandle policyHandle = new LsaPolicyHandle(
+       handle,
+       "\\\\" + serverName,
+       0x00000800  // POLICY_LOOKUP_NAMES
+       );
+            try { return(getFromNames(handle, policyHandle, names)); }
+            finally { policyHandle.close(); }
+        } finally { handle.close(); }
+    }
+
+    /**
+     * <p>This function is like the <b>getFromNames()</b> one, except that it maps a
+     * single name to its <b>SID</b> equivalent.</p>
+     *
+     * <p>If you have more than one name to map, <b>getFromNames()</b> is much more
+     * efficient.</p>
+     *
+     * @param handle The <b>DcerpcHandle</b> object to use to communicate with the
+     * LSA service
+     * @param policyHandle The <b>LsaPolicyHandle</b> to use in order to get
+     *  authorized by the LSA service.
+     * @param name A string containing the domain's object name to map.
+     * @return The <b>SID</b>s mapped to the given <b>name</b>.
+     * @throws IOException if anything goes wrong
+     * @author Giampaolo Tomassoni &lt;giampaolo at tomassoni dot biz&gt;
+     */
+    public static SID getFromName(
+   DcerpcHandle handle,
+   LsaPolicyHandle policyHandle,
+   String name
+    ) throws IOException {
+   SID sids[] = getFromNames(handle, policyHandle, new String[] { name });
+   return(sids == null || sids.length == 0 ? null : sids[0]);
+    }
+
+    /**
+     * <p>This function is like the <b>getFromNames()</b> one, except that it maps a
+     * single name to its <b>SID</b> equivalent.</p>
+     *
+     * <p>If you have more than one name to map, <b>getFromNames()</b> is much more
+     * efficient.</p>
+     *
+     * @param authorityServerName The name or address of the authority server to
+     * contact to resolve the names.
+     * @param auth The <b>NtlmPasswordAuthentication</b> to use in order to get
+     *  authorized by the server.
+     * @param name A string containing the domain's object name to map.
+     * @return The <b>SID</b>s mapped to the given <b>name</b>.
+     * @throws IOException if anything goes wrong
+     * @author Giampaolo Tomassoni &lt;giampaolo at tomassoni dot biz&gt;
+     */
+    public static SID getFromName(
+   String authorityServerName,
+   NtlmPasswordAuthentication auth,
+   String name
+    ) throws IOException {
+   SID sids[] = getFromNames(authorityServerName, auth, new String[] { name });
+   return(sids == null || sids.length == 0 ? null : sids[0]);
+    }
 }
+
+
 
