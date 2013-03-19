@@ -57,8 +57,8 @@ dependencies: Checks that all class dependencies are met.
             source="1.5"
             target="1.5"
             fork="yes"
-            debug="off"
-            debugLevel="lines,vars,source">
+            debug="${javac.debug}"
+            debugLevel="${javac.debugLevel}">
             <classpath refid="classpath"></classpath>
         </javac>
     </target>
