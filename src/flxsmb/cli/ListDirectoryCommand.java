@@ -54,7 +54,15 @@ public class ListDirectoryCommand extends BaseCommand
         System.out.println("Running command - " + this.toString());
 
         NtlmPasswordAuthentication auth = new NtlmPasswordAuthentication(domain, username, password);
-        String url = String.format("smb://%s/%s/%s/", hostname, sharename, dirpath);
+
+        String url;
+        if (sharename != null && dirpath != null)
+            url = String.format("smb://%s/%s/%s/", hostname, sharename, dirpath);
+        else if (sharename != null)
+            url = String.format("smb://%s/%s/", hostname, sharename);
+        else
+            url = String.format("smb://%s/", hostname);
+
         SmbFile directory = new SmbFile(url, auth);
 
         if (!directory.exists())
@@ -92,8 +100,18 @@ public class ListDirectoryCommand extends BaseCommand
 
     protected void printFileEntry(SmbFile file) throws IOException, SmbException
     {
-        String owner = formatUser(file.getOwnerUser());
-        String group = formatUser(file.getOwnerGroup());
+        String owner = "";
+        String group = "";
+
+        try
+        {
+            owner = formatUser(file.getOwnerUser());
+            group = formatUser(file.getOwnerGroup());
+        }
+        catch (Exception e)
+        {
+            /* do nothing */
+        }
 
         owner = String.format("%" + ownerColumnWidth + "s", owner);
         group = String.format("%" + groupColumnWidth + "s", group);
@@ -112,8 +130,18 @@ public class ListDirectoryCommand extends BaseCommand
     {
         for (SmbFile f : files)
         {
-            String owner = formatUser(f.getOwnerUser());
-            String group = formatUser(f.getOwnerGroup());
+            String owner = "";
+            String group = "";
+
+            try
+            {
+                owner = formatUser(f.getOwnerUser());
+                group = formatUser(f.getOwnerGroup());
+            }
+            catch (Exception e)
+            {
+                /* do nothing */
+            }
 
             ownerColumnWidth = Math.max(ownerColumnWidth, owner.length());
             groupColumnWidth = Math.max(groupColumnWidth, group.length());
@@ -123,4 +151,18 @@ public class ListDirectoryCommand extends BaseCommand
         groupColumnWidth = Math.min(groupColumnWidth + 2, MAX_GROUP_COLUMN_WIDTH);
     }
 
+    protected void validateArguments()
+    {
+        if (hostname == null)
+            throw new IllegalArgumentException(String.format("invalid UNC path //%s/%s/%s", hostname, sharename, dirpath));
+
+        if (domain == null)
+            domain = "";
+
+        if (username == null)
+            throw new IllegalArgumentException("No username passed");
+
+        if (password == null)
+            throw new IllegalArgumentException("Bad password");
+    }
 }

@@ -95,11 +95,11 @@ public abstract class BaseCommand
 
         String[] parts = uncPath.split("/", 5);
 
-        if (parts.length < 4 || parts.length > 5)
+        if (parts.length < 3 || parts.length > 5)
             throw new IllegalArgumentException(String.format("invalid UNC path [%s]", uncPath));
 
         hostname = parts[2];
-        sharename = parts[3];
+        sharename = parts.length >= 4 ? parts[3] : null;
         dirpath = parts.length == 5 ? parts[4] : null;
     }
 
@@ -108,6 +108,8 @@ public abstract class BaseCommand
         String[] parts = username.split("/");
         if (parts.length == 1)
             domain = "";
+        else
+            domain = parts[0];
 
         this.username = parts[parts.length - 1];
     }
